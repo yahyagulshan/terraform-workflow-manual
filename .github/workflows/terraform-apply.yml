@@ -83,7 +83,7 @@ jobs:
       - name: Manual Approval
         uses: trstringer/manual-approval@v1
         with:
-          github_token: ${{ github.token }} # Use the built-in token
+          secret: ${{ github.token }}
           approvers: yahyagulshan, yahyaawan
           minimum-approvals: 1
           issue-title: "Terraform ${{ github.event.inputs.action }} Approval Required"
