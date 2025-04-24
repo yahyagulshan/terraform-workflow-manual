@@ -19,12 +19,12 @@ on:
         required: false
         type: string
       resource:
-        description: 'Specify resource to destroy (vpc, eks, etc)'
+        description: 'Specify resource to destroy (vpc, ecr, etc)'
         required: false
         type: choice
         options:
           - vpc
-          - eks
+          - ecr
           - all
 
 permissions:
@@ -85,10 +85,10 @@ jobs:
         run: |
           terraform plan -destroy -target=aws_vpc.main -lock=false
 
-      - name: Terraform Plan (Destroy EKS)
-        if: github.event.inputs.action == 'destroy' && github.event.inputs.resource == 'eks'
+      - name: Terraform Plan (Destroy ECR)
+        if: github.event.inputs.action == 'destroy' && github.event.inputs.resource == 'ecr'
         run: |
-          terraform plan -destroy -target=aws_eks_cluster.main -lock=false
+          terraform plan -destroy -target=aws_ecr_cluster.main -lock=false
 
       - name: Terraform Plan (Destroy Stack)
         if: github.event.inputs.action == 'destroy' && github.event.inputs.stack
@@ -133,7 +133,7 @@ jobs:
           echo "⚠️ WARNING: Destroying ECR Cluster"
           echo "Proceeding with ECR destruction in 5 seconds..."
           sleep 5
-          terraform destroy -auto-approve -target=aws_eks_cluster.main -no-color -lock=false
+          terraform destroy -auto-approve -target=aws_ecr_cluster.main -no-color -lock=false
 
       - name: Terraform Destroy (Specific Stack)
         if: github.event.inputs.action == 'destroy' && github.event.inputs.stack
