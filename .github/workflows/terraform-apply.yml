@@ -18,6 +18,14 @@ on:
         description: 'Specify the Terraform stack/module target (for destroy - optional)'
         required: false
         type: string
+      resource:
+        description: 'Specify resource to destroy (vpc, eks, etc)'
+        required: false
+        type: choice
+        options:
+          - vpc
+          - eks
+          - all
 
 permissions:
   id-token: write
@@ -52,6 +60,7 @@ jobs:
           echo "Action: ${{ github.event.inputs.action }}"
           echo "Branch: ${{ github.event.inputs.branch }}"
           echo "Stack: ${{ github.event.inputs.stack }}"
+          echo "Resource: ${{ github.event.inputs.resource }}"
           echo "AWS_ROLE: ${{ env.AWS_ROLE }}"
           echo "Terraform Version: ${{ env.TF_VERSION }}"
 
@@ -71,13 +80,23 @@ jobs:
         if: github.event.inputs.action == 'apply'
         run: terraform plan -lock=false
 
-      - name: Terraform Plan (Destroy)
+      - name: Terraform Plan (Destroy VPC)
+        if: github.event.inputs.action == 'destroy' && github.event.inputs.resource == 'vpc'
+        run: |
+          terraform plan -destroy -target=aws_vpc.main -lock=false
+
+      - name: Terraform Plan (Destroy EKS)
+        if: github.event.inputs.action == 'destroy' && github.event.inputs.resource == 'eks'
+        run: |
+          terraform plan -destroy -target=aws_eks_cluster.main -lock=false
+
+      - name: Terraform Plan (Destroy Stack)
         if: github.event.inputs.action == 'destroy' && github.event.inputs.stack
         run: |
           terraform plan -destroy -target=module.${{ github.event.inputs.stack }} -lock=false
 
       - name: Terraform Plan (Destroy All)
-        if: github.event.inputs.action == 'destroy' && !github.event.inputs.stack
+        if: github.event.inputs.action == 'destroy' && github.event.inputs.resource == 'all'
         run: terraform plan -destroy -lock=false
 
       - name: Manual Approval
@@ -92,12 +111,29 @@ jobs:
             Action: ${{ github.event.inputs.action }}
             Branch: ${{ github.event.inputs.branch }}
             Stack: ${{ github.event.inputs.stack }}
+            Resource: ${{ github.event.inputs.resource }}
             Triggered by: ${{ github.actor }}
           exclude-workflow-initiator-as-approver: false
 
       - name: Terraform Apply
         if: github.event.inputs.action == 'apply'
         run: terraform apply -auto-approve -no-color -lock=false
+
+      - name: Terraform Destroy (VPC)
+        if: github.event.inputs.action == 'destroy' && github.event.inputs.resource == 'vpc'
+        run: |
+          echo "⚠️ WARNING: Destroying VPC Resources"
+          echo "Proceeding with VPC destruction in 5 seconds..."
+          sleep 5
+          terraform destroy -auto-approve -target=aws_vpc.main -no-color -lock=false
+
+      - name: Terraform Destroy (EKS)
+        if: github.event.inputs.action == 'destroy' && github.event.inputs.resource == 'eks'
+        run: |
+          echo "⚠️ WARNING: Destroying EKS Cluster"
+          echo "Proceeding with EKS destruction in 5 seconds..."
+          sleep 5
+          terraform destroy -auto-approve -target=aws_eks_cluster.main -no-color -lock=false
 
       - name: Terraform Destroy (Specific Stack)
         if: github.event.inputs.action == 'destroy' && github.event.inputs.stack
@@ -108,7 +144,7 @@ jobs:
           terraform destroy -auto-approve -target=module.${{ github.event.inputs.stack }} -no-color -lock=false
 
       - name: Terraform Destroy (All)
-        if: github.event.inputs.action == 'destroy' && !github.event.inputs.stack
+        if: github.event.inputs.action == 'destroy' && github.event.inputs.resource == 'all'
         run: |
           echo "⚠️ WARNING: Destroying ALL Resources!"
           echo "Proceeding with full destruction in 5 seconds..."
