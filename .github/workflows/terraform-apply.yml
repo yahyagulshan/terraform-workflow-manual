@@ -127,11 +127,11 @@ jobs:
           sleep 5
           terraform destroy -auto-approve -target=aws_vpc.main -no-color -lock=false
 
-      - name: Terraform Destroy (EKS)
-        if: github.event.inputs.action == 'destroy' && github.event.inputs.resource == 'eks'
+      - name: Terraform Destroy (ECR)
+        if: github.event.inputs.action == 'destroy' && github.event.inputs.resource == 'ecr'
         run: |
-          echo "⚠️ WARNING: Destroying EKS Cluster"
-          echo "Proceeding with EKS destruction in 5 seconds..."
+          echo "⚠️ WARNING: Destroying ECR Cluster"
+          echo "Proceeding with ECR destruction in 5 seconds..."
           sleep 5
           terraform destroy -auto-approve -target=aws_eks_cluster.main -no-color -lock=false
 
