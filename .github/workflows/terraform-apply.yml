@@ -83,17 +83,17 @@ jobs:
       - name: Terraform Plan (Destroy VPC)
         if: github.event.inputs.action == 'destroy' && github.event.inputs.resource == 'vpc'
         run: |
-          terraform plan -destroy -target=aws_vpc.main -lock=false
+          terraform plan -destroy -target="aws_vpc.main" -lock=false
 
       - name: Terraform Plan (Destroy ECR)
         if: github.event.inputs.action == 'destroy' && github.event.inputs.resource == 'ecr'
         run: |
-          terraform plan -destroy -target=aws_ecr_cluster.main -lock=false
+          terraform plan -destroy -target="aws_ecr_repository.main" -lock=false
 
       - name: Terraform Plan (Destroy Stack)
         if: github.event.inputs.action == 'destroy' && github.event.inputs.stack
         run: |
-          terraform plan -destroy -target=module.${{ github.event.inputs.stack }} -lock=false
+          terraform plan -destroy -target="module.${{ github.event.inputs.stack }}" -lock=false
 
       - name: Terraform Plan (Destroy All)
         if: github.event.inputs.action == 'destroy' && github.event.inputs.resource == 'all'
@@ -125,15 +125,15 @@ jobs:
           echo "⚠️ WARNING: Destroying VPC Resources"
           echo "Proceeding with VPC destruction in 5 seconds..."
           sleep 5
-          terraform destroy -auto-approve -target=aws_vpc.main -no-color -lock=false
+          terraform destroy -auto-approve -target="aws_vpc.main" -no-color -lock=false
 
       - name: Terraform Destroy (ECR)
         if: github.event.inputs.action == 'destroy' && github.event.inputs.resource == 'ecr'
         run: |
-          echo "⚠️ WARNING: Destroying ECR Cluster"
+          echo "⚠️ WARNING: Destroying ECR Repository"
           echo "Proceeding with ECR destruction in 5 seconds..."
           sleep 5
-          terraform destroy -auto-approve -target=aws_ecr_cluster.main -no-color -lock=false
+          terraform destroy -auto-approve -target="aws_ecr_repository.main" -no-color -lock=false
 
       - name: Terraform Destroy (Specific Stack)
         if: github.event.inputs.action == 'destroy' && github.event.inputs.stack
@@ -141,7 +141,7 @@ jobs:
           echo "⚠️ WARNING: Destroying ${{ github.event.inputs.stack }} Stack"
           echo "Proceeding with destruction in 5 seconds..."
           sleep 5
-          terraform destroy -auto-approve -target=module.${{ github.event.inputs.stack }} -no-color -lock=false
+          terraform destroy -auto-approve -target="module.${{ github.event.inputs.stack }}" -no-color -lock=false
 
       - name: Terraform Destroy (All)
         if: github.event.inputs.action == 'destroy' && github.event.inputs.resource == 'all'
