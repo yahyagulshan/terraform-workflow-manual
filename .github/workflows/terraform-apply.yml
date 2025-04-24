@@ -84,7 +84,7 @@ jobs:
         uses: trstringer/manual-approval@v1
         with:
           secret: ${{ github.token }}
-          approvers: yahyagulshan, yahyaawan
+          approvers: yahyagulshan
           minimum-approvals: 1
           issue-title: "Terraform ${{ github.event.inputs.action }} Approval Required"
           issue-body: |
