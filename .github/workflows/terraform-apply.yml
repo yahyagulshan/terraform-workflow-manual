@@ -83,12 +83,12 @@ jobs:
       - name: Terraform Plan (Destroy VPC)
         if: github.event.inputs.action == 'destroy' && github.event.inputs.resource == 'vpc'
         run: |
-          terraform plan -destroy -target="aws_vpc.main" -lock=false
+          terraform plan -destroy -target="module.vpc" -lock=false
 
       - name: Terraform Plan (Destroy ECR)
         if: github.event.inputs.action == 'destroy' && github.event.inputs.resource == 'ecr'
         run: |
-          terraform plan -destroy -target="aws_ecr_repository.main" -lock=false
+          terraform plan -destroy -target="module.ecr" -lock=false
 
       - name: Terraform Plan (Destroy Stack)
         if: github.event.inputs.action == 'destroy' && github.event.inputs.stack
