@@ -125,7 +125,7 @@ jobs:
           echo "⚠️ WARNING: Destroying VPC Resources"
           echo "Proceeding with VPC destruction in 5 seconds..."
           sleep 5
-          terraform destroy -auto-approve -target="aws_vpc.main" -no-color -lock=false
+          terraform destroy -auto-approve --target="module.vpc" -no-color -lock=false
 
       - name: Terraform Destroy (ECR)
         if: github.event.inputs.action == 'destroy' && github.event.inputs.resource == 'ecr'
@@ -133,7 +133,7 @@ jobs:
           echo "⚠️ WARNING: Destroying ECR Repository"
           echo "Proceeding with ECR destruction in 5 seconds..."
           sleep 5
-          terraform destroy -auto-approve -target="aws_ecr_repository.main" -no-color -lock=false
+          terraform destroy -auto-approve -target="module.ecr" -no-color -lock=false
 
       - name: Terraform Destroy (Specific Stack)
         if: github.event.inputs.action == 'destroy' && github.event.inputs.stack
