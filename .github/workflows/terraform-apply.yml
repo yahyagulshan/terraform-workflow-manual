@@ -1,0 +1,116 @@
+name: Terraform Auto
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Choose an action: apply or destroy'
+        required: true
+        type: choice
+        options:
+          - apply
+          - destroy
+      branch:
+        description: 'Specify the branch to checkout'
+        required: true
+        type: string
+      stack:
+        description: 'Specify the Terraform stack/module target (for destroy - optional)'
+        required: false
+        type: string
+
+permissions:
+  id-token: write
+  contents: read
+  issues: write
+
+jobs:
+  terraform:
+    name: Terraform ${{ github.event.inputs.action }}
+    runs-on: ubuntu-latest
+
+    env:
+      TF_VERSION: ${{ secrets.TF_VERSION }}
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+      TF_PLAN_CACHE: terraform.tfplan
+      AWS_ROLE: ${{ secrets.ROLE_ARN_PROD }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3.5.0
+        with:
+          ref: ${{ github.event.inputs.branch }}
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_ROLE }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Debug Info
+        run: |
+          echo "Action: ${{ github.event.inputs.action }}"
+          echo "Branch: ${{ github.event.inputs.branch }}"
+          echo "Stack: ${{ github.event.inputs.stack }}"
+          echo "AWS_ROLE: ${{ env.AWS_ROLE }}"
+          echo "Terraform Version: ${{ env.TF_VERSION }}"
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3.1.2
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Terraform Init
+        run: terraform init -lock=false
+
+      - name: Terraform Validate
+        id: validate
+        run: terraform validate -no-color
+
+      - name: Terraform Plan (Apply)
+        if: github.event.inputs.action == 'apply'
+        run: terraform plan -lock=false
+
+      - name: Terraform Plan (Destroy)
+        if: github.event.inputs.action == 'destroy' && github.event.inputs.stack
+        run: |
+          terraform plan -destroy -target=module.${{ github.event.inputs.stack }} -lock=false
+
+      - name: Terraform Plan (Destroy All)
+        if: github.event.inputs.action == 'destroy' && !github.event.inputs.stack
+        run: terraform plan -destroy -lock=false
+
+      - name: Manual Approval
+        uses: trstringer/manual-approval@v1
+        with:
+          github_token: ${{ github.token }} # Use the built-in token
+          approvers: yahyagulshan, yahyaawan
+          minimum-approvals: 1
+          issue-title: "Terraform ${{ github.event.inputs.action }} Approval Required"
+          issue-body: |
+            Please review the Terraform plan and approve or deny the ${{ github.event.inputs.action }}
+            Action: ${{ github.event.inputs.action }}
+            Branch: ${{ github.event.inputs.branch }}
+            Stack: ${{ github.event.inputs.stack }}
+            Triggered by: ${{ github.actor }}
+          exclude-workflow-initiator-as-approver: false
+
+      - name: Terraform Apply
+        if: github.event.inputs.action == 'apply'
+        run: terraform apply -auto-approve -no-color -lock=false
+
+      - name: Terraform Destroy (Specific Stack)
+        if: github.event.inputs.action == 'destroy' && github.event.inputs.stack
+        run: |
+          echo "⚠️ WARNING: Destroying ${{ github.event.inputs.stack }} Stack"
+          echo "Proceeding with destruction in 5 seconds..."
+          sleep 5
+          terraform destroy -auto-approve -target=module.${{ github.event.inputs.stack }} -no-color -lock=false
+
+      - name: Terraform Destroy (All)
+        if: github.event.inputs.action == 'destroy' && !github.event.inputs.stack
+        run: |
+          echo "⚠️ WARNING: Destroying ALL Resources!"
+          echo "Proceeding with full destruction in 5 seconds..."
+          sleep 5
+          terraform destroy -auto-approve -no-color -lock=false
